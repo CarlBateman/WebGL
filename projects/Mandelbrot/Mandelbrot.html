@@ -1,0 +1,152 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <title>Shader</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta charset="utf-8" />
+
+  <link href="css/webgl.css" rel="stylesheet" />
+
+  <script src="libs/webgl-utils-01.js"></script>
+  <script src="libs/webgl-utils.js"></script>
+
+  <script id="shader-vs" type="x-shader/x-vertex">
+    attribute vec2 aVertex;
+    uniform vec2 uScale;
+    varying vec2 vPos;
+
+    void main(void) {
+      vPos = aVertex * 2.0;
+      gl_Position = vec4(aVertex * uScale, 0.0, 1.0);
+    }
+  </script>
+
+  <script id="shader-fs" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform vec4 uColour;
+    varying vec2 vPos;
+
+    void main(void) {
+      gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+      vec2 z = vPos;
+      float x,y;
+      float dist = 0.0;
+
+      for (int i=0;i<255;i++) {
+        x = (z.x * z.x - z.y * z.y) + vPos.x;
+        y = (z.y * z.x + z.x * z.y) + vPos.y;
+
+        dist += (x*x  +  y*y);
+
+        if((x * x + y * y) > 4.0) {
+          float c = cos(float(i));
+          float s = sin(float(i));
+          float f = float(255-i)/255.0;
+
+          
+          
+          gl_FragColor = vec4(s,c,f, 1.0);
+          //gl_FragColor = vec4(r,r,r, 1.0);
+          break;
+        } else {
+          if(i==254) {
+            float r = cos(1.0 * sqrt(dist));
+            gl_FragColor = vec4(r,r,r, 1.0);
+          }
+
+        }
+        z.x = x;
+        z.y = y;
+      }
+
+      //if(vPos.x*vPos.x + vPos.y*vPos.y > 2.0)
+      //    gl_FragColor = vec4(1.0, 1.0, 0.0, 1.0);
+      
+    }
+  </script>
+
+  <script type="text/JavaScript">
+    window.addEventListener('DOMContentLoaded', function () { main(); });
+
+    function main() {
+      var gl;
+
+      var bufferInfo = {
+        id: null,
+        itemSize: 2,
+        numItems: 0,
+      };
+
+      var programInfo = {
+        id: null,
+        aVertex: null,
+        uColour: null,
+      };
+
+      (function init() {
+        var canvas = document.getElementById("glcanvas");
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        gl = WebGLUtils.setupWebGL(canvas);
+        if (!gl) return;
+
+        programInfo.id = initShaderProgram(gl, "shader-vs", "shader-fs");
+        if (!programInfo.id) return;
+
+        initVariableLocations();
+        initGeometry();
+
+        var scale = [1, 1];
+        var ratio = gl.canvas.width / gl.canvas.height;
+        if (ratio < 0)
+          scale[1] = ratio;
+        else
+          scale[0] = 1 / ratio;
+
+        gl.uniform2fv(gl.getUniformLocation(programInfo.id, "uScale"), scale);
+
+        draw();
+      })();
+
+      function initVariableLocations() {
+        programInfo.uColour = gl.getUniformLocation(programInfo.id, "uColour");
+
+        programInfo.aVertex = gl.getAttribLocation(programInfo.id, "aVertex");
+      }
+
+      function initGeometry() {
+        var vertices = new Float32Array([-1,  1,  
+                                          1, -1,
+                                         -1, -1,
+                                         -1,  1,
+                                          1, -1,
+                                          1,  1]);
+        bufferInfo.numItems = vertices.length / bufferInfo.itemSize;
+
+        bufferInfo.id = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.id);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        gl.vertexAttribPointer(programInfo.aVertex, bufferInfo.itemSize, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(programInfo.aVertex);
+      }
+
+      function draw() {
+        gl.uniform4fv(programInfo.uColour, [0.0, 1.0, 0.0, 1.0]);
+
+        gl.clearColor(0, 0.5, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.drawArrays(gl.TRIANGLES, 0, bufferInfo.numItems);
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <canvas id="glcanvas">
+    Your browser doesn't appear to support the <code>&lt;canvas&gt;</code> element.
+  </canvas>
+</body>
+</html>
