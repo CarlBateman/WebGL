@@ -3,13 +3,13 @@ body {
   margin: 0;
 }
 
-canvas  {
+canvas.fullwindow {
   width: 100vw;
   height: 100vh;
   display: block;
 }
 
-canvas .bordered {
+canvas.bordered {
   border: 2px solid #0300ff;
   border-radius: 10px;
   width: 800px;
