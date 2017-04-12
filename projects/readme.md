@@ -1,3 +1,3 @@
 ### Projects ###
 
-- [Simple Mandelbrot](https://carlbateman.github.io/WebGL/projects/Mandelbrot/Mandelbrot.html) (in progress)
+- [Simple Mandelbrot Viewer](https://carlbateman.github.io/WebGL/projects/Mandelbrot/Mandelbrot.html) (in progress)
