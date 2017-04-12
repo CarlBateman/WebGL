@@ -1,0 +1,9 @@
+﻿body {
+}
+
+canvas {
+  border: 2px solid #0300ff;
+  border-radius: 10px;
+  width: 800px;
+  height: 600px;
+}
