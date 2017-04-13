@@ -1,0 +1,332 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+  <title>HeartGeometry Test</title>
+  <style>
+    body {
+      color: #000;
+      font-family: Monospace;
+      font-size: 13px;
+      text-align: center;
+      font-weight: bold;
+      background-color: #fff;
+      margin: 0px;
+      overflow: hidden;
+    }
+
+    #info {
+      color: #000;
+      position: absolute;
+      top: 10px;
+      width: 100%;
+      padding: 5px;
+    }
+  </style>
+  <script src="../../libs/datgui/dat.gui.min.js"></script>
+
+  <script src="../../libs/three-r84/three.js"></script>
+  <script src="../../libs/three-r84/OrbitControls.js"></script>
+  <script src="HeartGeometry.js"></script>
+
+  <script type="text/javascript">
+    var camera, scene, renderer;
+    var cameraControls;
+
+    var parametersBase = function () {
+      this.texture;
+      this.body;
+      this.showFaceNormals;
+      this.showVertexNormals;
+      this.texture;
+      this.textureStyle;
+      this.no_of_layers;
+      this.points_per_layer;
+      this.scaleX;
+    }
+    var parameters = new parametersBase();
+    var oldParameters = new parametersBase();
+
+    var clock = new THREE.Clock();
+    var gridX = true;
+    var gridY = false;
+    var gridZ = false;
+    var axes = true;
+    var ground = false;
+
+    var polyhedron;
+    var faceNormals;
+    var vertexNormals;
+
+    var gui;
+    var control;
+
+    var texChecker= new THREE.Texture();
+    var texR= new THREE.Texture();
+    var texHorizontal= new THREE.Texture();
+    var texVertical= new THREE.Texture();
+    var texFold= new THREE.Texture();
+    var matTexture;
+    var matWireOnly;
+    var matSolidAndWireframe;
+    var matNoTexture;
+    var matCurrent;
+    var matParticle;
+
+    function fillScene() {
+      scene = new THREE.Scene();
+      scene.fog = new THREE.Fog(0x808080, 2000, 4000);
+
+      // LIGHTS
+      var ambientLight = new THREE.AmbientLight(0x222222);
+
+      var light1 = new THREE.DirectionalLight(0xffddcc, 1.0);
+      light1.position.set(200, 600, 500);
+
+      var light2 = new THREE.DirectionalLight(0xeeeeff, 0.6);
+      light2.position.set(-500, -100, -200);
+
+      var light3 = new THREE.DirectionalLight(0xeedfff, 0.6);
+      light3.position.set(100, 100, -200);
+
+      scene.add(ambientLight);
+      scene.add(light1);
+      scene.add(light2);
+      scene.add(light3);
+    }
+
+    function loadTexture(loader, texture, textureName) {
+      loader.load(textureName, function (image) {
+        texture.image = image;
+        texture.needsUpdate = true;
+      });
+    }
+
+    function init() {
+      // RENDERER
+      renderer = new THREE.WebGLRenderer({ antialias: true });
+      renderer.gammaInput = true;
+      renderer.gammaOutput = true;
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      renderer.setClearColor(0xAAAABB, 1.0);
+
+      // CAMERA
+      var aspectRatio = window.innerWidth / window.innerHeight;
+      camera = new THREE.PerspectiveCamera(40, aspectRatio, 1, 10000);
+      camera.position.set(400, 0, 0);
+
+      // CONTROLS
+      cameraControls = new THREE.OrbitControls(camera, renderer.domElement);
+      cameraControls.target.set(0, 0, 0);
+
+      texChecker = new THREE.Texture(); 
+      var loader = new THREE.ImageLoader();
+      loader.setPath("../../assets/imgs/");
+      loader.load("checkerboard.jpg", function (image) {
+        texChecker.image = image;
+        texChecker.needsUpdate = true;
+        texChecker.wrapS = texChecker.wrapT = THREE.RepeatWrapping;
+        texChecker.repeat.set(10, 10);
+      });
+
+      loadTexture(loader, texHorizontal, 'stripes-hori.png');
+      loadTexture(loader, texVertical, 'stripes-vert.png');
+      loadTexture(loader, texFold, 'fold.jpg');
+      loadTexture(loader, texR, 'jJj2cw6.png');
+
+      matTexture = new THREE.MeshPhongMaterial({
+        shading: THREE.FlatShading,
+      });
+      matCurrent = matTexture;
+
+      matWireOnly = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
+      matSolidAndWireframe = [matCurrent, matWireOnly];
+      matNoTexture = new THREE.MeshPhongMaterial({
+        shading: THREE.FlatShading
+      });
+
+      matParticle = new THREE.PointsMaterial({ size: 1 });
+    }
+
+    function addToDOM() {
+      var container = document.getElementById('container');
+      var canvas = container.getElementsByTagName('canvas');
+      if (canvas.length > 0) {
+        container.removeChild(canvas[0]);
+      }
+      container.appendChild(renderer.domElement);
+    }
+
+    function drawHelpers() {
+      if (ground) {
+        Coordinates.drawGround({ size: 10000 });
+      }
+      if (gridX) {
+        Coordinates.drawGrid({ size: 10000, scale: 0.01 });
+      }
+      if (gridY) {
+        Coordinates.drawGrid({ size: 10000, scale: 0.01, orientation: "y" });
+      }
+      if (gridZ) {
+        Coordinates.drawGrid({ size: 10000, scale: 0.01, orientation: "z" });
+      }
+      if (axes) {
+        Coordinates.drawAllAxes({ axisLength: 200, axisRadius: 1, axisTess: 50 });
+      }
+    }
+
+    function animate() {
+      window.requestAnimationFrame(animate);
+      render();
+    }
+
+    function render() {
+      var delta = clock.getDelta();
+      cameraControls.update(delta);
+
+      var recreateModel = false;
+
+      if (oldParameters.texture != parameters.texture
+        || oldParameters.body != parameters.body
+        || oldParameters.showFaceNormals != parameters.showFaceNormals
+        || oldParameters.showVertexNormals != parameters.showVertexNormals
+        || oldParameters.flatShading != parameters.flatShading) {
+        oldParameters.showFaceNormals = parameters.showFaceNormals;
+        oldParameters.showVertexNormals = parameters.showVertexNormals;
+        oldParameters.body = parameters.body;
+        oldParameters.flatShading = parameters.flatShading;
+        oldParameters.texture = parameters.texture;
+
+        if (oldParameters.texture === "None") { // setting map to null seems to make gl unhappy :()
+          matCurrent = matNoTexture;
+          matWireOnly.color = new THREE.Color(0x000000);
+        } else {
+          matCurrent = matTexture;
+          if (oldParameters.texture === "R") {
+            matCurrent.map = texR;
+          } else if (oldParameters.texture === "Stripes vertical") {
+            matCurrent.map = texVertical;
+          } else if (oldParameters.texture === "Stripes horizontal") {
+            matCurrent.map = texHorizontal;
+          } else if (oldParameters.texture === "Checker") {
+            matCurrent.map = texChecker;
+          } else if (oldParameters.texture === "Fold") {
+            matCurrent.map = texFold;
+          }
+        matWireOnly.color = new THREE.Color(0x000000);
+        }
+        recreateModel = true;
+      }
+
+      if (oldParameters.textureStyle !== parameters.textureStyle) {
+        oldParameters.textureStyle = parameters.textureStyle
+        recreateModel = true;
+      }
+
+      if (oldParameters.no_of_layers !== parameters.no_of_layers) {
+        oldParameters.no_of_layers = parameters.no_of_layers;
+        recreateModel = true;
+      }
+
+      if (oldParameters.points_per_layer !== parameters.points_per_layer) {
+        oldParameters.points_per_layer = parameters.points_per_layer;
+        recreateModel = true;
+      }
+
+      if (oldParameters.scaleX !== parameters.scaleX) {
+        oldParameters.scaleX = parameters.scaleX;
+        recreateModel = true;
+      }
+
+      if (recreateModel) {
+        scene.remove(polyhedron);
+        scene.remove(faceNormals);
+        scene.remove(vertexNormals);
+        createModel();
+      }
+      renderer.render(scene, camera);
+    }
+
+    function createModel() {
+      var geometry = new THREE.HeartGeometry({ textureStyle: parameters.textureStyle, points_per_layer: parameters.points_per_layer, no_of_layers: parameters.no_of_layers });
+
+      switch (true) {
+        case (parameters.body === "Points"):
+          matParticle.color = new THREE.Color(0x000000);
+          polyhedron = new THREE.ParticleSystem(geometry, matParticle);
+          break;
+        case (parameters.body === "Wireframe"):
+          matWireOnly.color = new THREE.Color(0x000000);
+          polyhedron = new THREE.Mesh(geometry, matWireOnly);
+          break;
+        default:
+          matCurrent.shading = oldParameters.flatShading ? THREE.flatShading : THREE.SmoothShading;
+
+          if (parameters.body === "Solid") {
+            polyhedron = new THREE.Mesh(geometry, matCurrent);
+          } else {
+            matSolidAndWireframe = [matCurrent, matWireOnly];
+            polyhedron = new THREE.SceneUtils.createMultiMaterialObject(geometry, matSolidAndWireframe);
+          }
+      }
+
+      polyhedron.scale.set(parameters.scaleX, 100, 100);
+
+      if (parameters.body === "Both") {
+        faceNormals = new THREE.FaceNormalsHelper(polyhedron.children[0], 25)
+        vertexNormals = new THREE.VertexNormalsHelper(polyhedron.children[0], 25)
+      } else {
+        faceNormals = new THREE.FaceNormalsHelper(polyhedron, 25)
+        vertexNormals = new THREE.VertexNormalsHelper(polyhedron, 25)
+      }
+
+      scene.add(polyhedron);
+      if (parameters.showFaceNormals) scene.add(faceNormals);
+      if (parameters.showVertexNormals) scene.add(vertexNormals);
+    }
+
+    function setupGui() {
+      parameters = {
+        flatShading: false,
+        texture: 'R',
+        textureStyle: 'Repeat',
+        body: 'Solid',
+        showFaceNormals: false,
+        showVertexNormals: false,
+        no_of_layers: 10,
+        points_per_layer: 40,
+        scaleX: 50,
+      };
+
+      var gui = new dat.GUI();
+      gui.add(parameters, "texture", ['Fold', 'R', 'Stripes vertical', 'Stripes horizontal', 'Checker', 'None']).name("Texture");
+      gui.add(parameters, "textureStyle", ['Repeat', 'Project', 'Fold']).name("TextureStyle");
+      gui.add(parameters, "scaleX", -100, 200).name("Scale X");
+      gui.add(parameters, "no_of_layers", 1, 20).name("No of layers");
+      gui.add(parameters, "points_per_layer", 1, 100).name("Points per layer");
+      gui.add(parameters, "body", ['Points', 'Solid', 'Wireframe', 'Both']).name("Body");
+      gui.add(parameters, "flatShading").name("Flat shading");
+      gui.open();
+      var h = gui.addFolder("Normals");
+      h.add(parameters, "showFaceNormals").name("Show face normals");
+      h.add(parameters, "showVertexNormals").name("Show vertex normals");
+      h.open();
+    }
+
+    window.onload = function () {
+      init();
+      fillScene();
+      //drawHelpers();
+      addToDOM();
+      setupGui();
+      animate();
+    };
+  </script>
+</head>
+<body id="container">
+  <div id="info">
+    Test - HeartGeometry (for <a href="http://threejs.org" target="_blank">three.js</a>)<br />
+    <!--Simple example <a href="HeartGeometryExample.html" target="_blank">here</a>-->
+  </div>
+</body>
+</html>
