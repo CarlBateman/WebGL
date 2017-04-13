@@ -1,4 +1,4 @@
-### Demos ###
+### Demos
 
 ![filleted box](../assets/screenshots/filletedbox.gif)
 - [Filleted Box](https://carlbateman.github.io/WebGL/demos/filletedbox/FilletedBox.html)
