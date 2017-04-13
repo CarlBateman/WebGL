@@ -1,4 +1,7 @@
-﻿"use strict"
+﻿/// <reference path="../../libs/oimo/oimo.js" />
+
+
+"use strict"
 
 window.addEventListener('DOMContentLoaded', function () { main(); });
 
@@ -70,14 +73,14 @@ function main() {
     spotLight.position.set(60, 300, 60);
     scene.add(spotLight);
 
-    var sphere = new THREE.Mesh(
+    var ball = new THREE.Mesh(
       new THREE.SphereGeometry(5, 16, 16),
       new THREE.MeshPhongMaterial({ color: 0x804000 })
     );
-    sphere.castShadow = true;
-    sphere.position.y = 5;
-    sphere.position.z = 90;
-    scene.add(sphere);
+    ball.castShadow = true;
+    ball.position.y = 5;
+    ball.position.z = 90;
+    scene.add(ball);
 
     var floor = new THREE.Mesh(
       new THREE.PlaneGeometry(100, 200),
@@ -87,10 +90,10 @@ function main() {
     floor.rotateX(-Math.PI / 2);
     scene.add(floor);
 
-    var bodies = [];
+    var skittles = [];
 
     for (var i = 0; i < 4; i++) {
-      for (var j = 0; j < i+1; j++) {
+      for (var j = 0; j < i + 1; j++) {
         var mesh = new THREE.Mesh(
           new THREE.CylinderGeometry(3, 3, 15, 16),
           new THREE.MeshPhongMaterial({ color: 0xee4444 })
@@ -98,7 +101,7 @@ function main() {
         mesh.rotateY(Math.PI / 2);
         mesh.castShadow = true;
         mesh.position.set((i / 2 - j) * 10, 7.5, -50 - i * 10);
-        bodies.push(mesh);
+        skittles.push(mesh);
         scene.add(mesh);
       }
     }
@@ -115,10 +118,10 @@ function main() {
       gravity: [0, -9.8, 0]
     });
 
-    var body1 = world.add({
+    var ball_body = world.add({
       type: 'sphere', // type of shape : sphere, box, cylinder 
-      size: [sphere.geometry.parameters.radius, sphere.geometry.parameters.radius, sphere.geometry.parameters.radius],//[1, 1, 1], // size of shape
-      pos: sphere.position.toArray(),// getWorldPosition(),//[0, 0, 0], // start position in degree
+      size: [ball.geometry.parameters.radius, ball.geometry.parameters.radius, ball.geometry.parameters.radius],//[1, 1, 1], // size of shape
+      pos: ball.position.toArray(),// getWorldPosition(),//[0, 0, 0], // start position in degree
       move: true, // dynamic or statique
       density: 1,
       friction: 0.02,
@@ -126,11 +129,10 @@ function main() {
       belongsTo: 1, // The bits of the collision groups to which the shape belongs.
       collidesWith: 0xffffffff // The bits of the collision groups with which the shape collides.
     });
-    //body1.resetPosition(body1.pos.x, body1.pos.y+15, body1.pos.z);
-    body1.applyImpulse(new OIMO.Vec3(0, 0, 0), new OIMO.Vec3(5000 - Math.random() * 10000, 0, -50000));
+    ball_body.applyImpulse(new OIMO.Vec3(0, 0, 0), new OIMO.Vec3(5000 - Math.random() * 10000, 0, -50000));
 
-    var body2 = world.add({
-      type: 'box', // type of shape : sphere, box, cylinder 
+    var floor_body = world.add({
+      type: 'box', // type of shape : ball, box, cylinder 
       size: [floor.geometry.parameters.width, .100, floor.geometry.parameters.height], // [1, 1, 1], // size of shape
       pos: floor.position.toArray(),// getWorldPosition(),//[0, 0, 0], // start position in degree
       move: false, // dynamic or statique
@@ -141,12 +143,12 @@ function main() {
       collidesWith: 0xffffffff // The bits of the collision groups with which the shape collides.
     });
 
-    var skittles = [];
-    for (var i = 0; i < bodies.length; i++) {
-      var body = bodies[i];
+    var skittle_bodies = [];
+    for (var i = 0; i < skittles.length; i++) {
+      var body = skittles[i];
 
       var t = world.add({
-        type: 'cylinder', // type of shape : sphere, box, cylinder 
+        type: 'cylinder', // type of shape : ball, box, cylinder 
         size: [body.geometry.parameters.radiusTop, body.geometry.parameters.height], // [1, 1, 1], // size of shape
         pos: body.position.toArray(),// getWorldPosition(),//[0, 0, 0], // start position in degree
         rot: [0, 45, 0], // start rotation in degree
@@ -158,12 +160,24 @@ function main() {
         collidesWith: 0xffffffff // The bits of the collision groups with which the shape collides.
       });
 
-      skittles.push(t);
+      skittle_bodies.push(t);
     }
 
-    setTimeout(function () {
-      window.location.reload();
-    }, 9000);
+    function resetPins() {
+      var k = 0;
+      for (var i = 0; i < 4; i++) {
+        for (var j = 0; j < i + 1; j++) {
+          skittle_bodies[k].resetRotation(0, Math.PI / 2, 0);
+          skittle_bodies[k++].resetPosition((i / 2 - j) * 10, 7.5, -50 - i * 10);
+        }
+      }
+
+      ball_body.resetPosition(0, 5, 90);
+      ball_body.applyImpulse(new OIMO.Vec3(0, 0, 0), new OIMO.Vec3(5000 - Math.random() * 10000, 0, -50000));
+      setTimeout(resetPins, 10000);
+    }
+
+    setTimeout(resetPins,10000);
 
     render();
     function render() {
@@ -173,10 +187,10 @@ function main() {
 
       world.step();
 
-      sphere.position.copy(body1.getPosition());
-      for (var i = 0; i < bodies.length; i++) {
-        bodies[i].position.copy(skittles[i].getPosition());
-        bodies[i].quaternion.copy(skittles[i].getQuaternion());
+      ball.position.copy(ball_body.getPosition());
+      for (var i = 0; i < skittles.length; i++) {
+        skittles[i].position.copy(skittle_bodies[i].getPosition());
+        skittles[i].quaternion.copy(skittle_bodies[i].getQuaternion());
       }
     }
   }
