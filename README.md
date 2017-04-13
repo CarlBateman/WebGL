@@ -1,4 +1,4 @@
-### Projects ###
+### Projects
 
 - [Code](https://github.com/CarlBateman/WebGL/tree/master/projects)
 - [Live](https://carlbateman.github.io/WebGL/projects)
