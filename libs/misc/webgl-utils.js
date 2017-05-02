@@ -76,7 +76,7 @@ var makeFailHTML = function(msg) {
 };
 
 /**
- * Mesasge for getting a webgl browser
+ * Message for getting a webgl browser
  * @type {string}
  */
 var GET_A_WEBGL_BROWSER = '' +
@@ -84,7 +84,7 @@ var GET_A_WEBGL_BROWSER = '' +
   '<a href="http://get.webgl.org">Click here to upgrade your browser.</a>';
 
 /**
- * Mesasge for need better hardware
+ * Message for need better hardware
  * @type {string}
  */
 var OTHER_PROBLEM = '' +
