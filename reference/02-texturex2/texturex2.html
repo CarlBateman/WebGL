@@ -1,0 +1,33 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <title>Draw multiple textures</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta charset="utf-8" />
+
+  <link href="../../css/webgl.css" rel="stylesheet" />
+
+  <script src="../../libs/misc/webgl-shader-utils.js"></script>
+  <script src="../../libs/misc/webgl-utils.js"></script>
+
+  <script src="texturex2.js"></script>
+  <script src="geometry.js"></script>
+
+</head>
+
+<body>
+  <div class="flex-container">
+    <canvas id="glcanvas" class="halfwindow bordered">
+      Your browser doesn't appear to support the <code>&lt;canvas&gt;</code> element.
+    </canvas>
+    <div class="indent" style="line-height:1.5em;">
+      <p><span style="font-weight:bold">Display two textures on different squares</span></p>
+      <p>The same square is re-used with an offest.</p>
+      <p>Only one active texture is used.</p>
+      <p>A different texture is assigned to the same active texture.</p>
+      <p>A default blank image (a sinlge pixel) is assigned to the texture before an image is loaded.</p>
+      <p>gl.texImage2D before gl.bindTexture!</p>
+    </div>
+  </div>
+</body>
+</html>

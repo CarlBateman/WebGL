@@ -1,0 +1,169 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+  <title>Draw a Triangle</title>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <meta charset="utf-8" />
+
+  <style>
+    body {
+      border: 0;
+      margin: 0;
+    }
+
+    .flex-container {
+      display: -webkit-flex;
+      display: flex;
+    }
+
+    canvas.halfwindow {
+      width: 50vw;
+      height: 50vh;
+      display: block;
+    }
+
+    canvas.bordered {
+      border: 2px solid #0300ff;
+      border-radius: 10px;
+    }
+
+    p {
+      margin:0;
+      padding-left:10px
+    }
+  </style>
+
+  <script id="vertex" type="x-shader/x-vertex">
+    attribute vec2 aVertex;
+
+    void main(void) {
+      gl_Position = vec4(aVertex, 0.0, 1.0);
+    }
+  </script>
+
+  <script id="fragment" type="x-shader/x-fragment">
+    precision mediump float;
+
+    void main(void) {
+      gl_FragColor = vec4(1.0, 1.0, 1.0, 1.0);
+    }
+  </script>
+
+  <script type="text/JavaScript">
+    window.addEventListener('DOMContentLoaded', function () { main(); });
+
+    function main() {
+      var gl;
+
+      // http://webglfundamentals.org/webgl/lessons/webgl-anti-patterns.html
+      var bufferInfo = {
+        id: null,
+        itemSize: 0,
+        numItems: 0,
+      };
+
+      var programInfo = {
+        id: null,
+        aVertex: null,
+      };
+
+      (function init() {
+        var canvas = document.getElementById("glcanvas");
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
+
+        getWebGLcontext(canvas);
+
+        if (gl) {
+          initShaderProgram();
+          initVariableLocations();
+          initGeometry();
+
+          draw();
+        }
+      })();
+
+      function getWebGLcontext(canvas) {
+        var names = ["webgl", "experimental-webgl", "webkit-3d", "moz-webgl"];
+        for (var i = 0; i < names.length; ++i) {
+          try { gl = canvas.getContext(names[i]); }
+          catch (e) { }
+          if (gl) break;
+        }
+      }
+
+      function initShaderProgram() {
+        var vertexScript = document.getElementById("vertex").firstChild.nodeValue;
+        var fragmentScript = document.getElementById("fragment").firstChild.nodeValue;
+
+        var vertexShader = gl.createShader(gl.VERTEX_SHADER);
+        gl.shaderSource(vertexShader, vertexScript);
+        gl.compileShader(vertexShader);
+
+        var fragmentShader = gl.createShader(gl.FRAGMENT_SHADER);
+        gl.shaderSource(fragmentShader, fragmentScript);
+        gl.compileShader(fragmentShader);
+
+        programInfo.id = gl.createProgram();
+        gl.attachShader(programInfo.id, vertexShader);
+        gl.attachShader(programInfo.id, fragmentShader);
+        gl.linkProgram(programInfo.id);
+
+        if (!gl.getShaderParameter(vertexShader, gl.COMPILE_STATUS))
+          console.log(gl.getShaderInfoLog(vertexShader));
+
+        if (!gl.getShaderParameter(fragmentShader, gl.COMPILE_STATUS))
+          console.log(gl.getShaderInfoLog(fragmentShader));
+
+        if (!gl.getProgramParameter(programInfo.id, gl.LINK_STATUS))
+          console.log(gl.getProgramInfoLog(programInfo.id));
+
+        gl.useProgram(programInfo.id);
+      }
+
+      function initVariableLocations() {
+        programInfo.aVertex = gl.getAttribLocation(programInfo.id, "aVertex");
+      }
+
+      function initGeometry() {
+        var vertices = new Float32Array([
+          -0.5,  0.5,
+           0.5, -0.5,
+          -0.5, -0.5]);
+        bufferInfo.itemSize = 2;
+        bufferInfo.numItems = vertices.length / bufferInfo.itemSize;
+
+        bufferInfo.id = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, bufferInfo.id);
+        gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
+
+        gl.vertexAttribPointer(programInfo.aVertex, bufferInfo.itemSize, gl.FLOAT, false, 0, 0);
+        gl.enableVertexAttribArray(programInfo.aVertex);
+      }
+
+      function draw() {
+        gl.clearColor(0, 0.5, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+
+        gl.drawArrays(gl.TRIANGLES, 0, bufferInfo.numItems);
+      }
+    }
+  </script>
+</head>
+
+<body>
+  <div class="flex-container">
+    <canvas id="glcanvas" class="halfwindow bordered">
+      Your browser doesn't appear to support the <code>&lt;canvas&gt;</code> element.
+    </canvas>
+    <div style="line-height:1.5em;">
+    <p><span style="font-weight:bold">Triangle</span></p>
+    <p>Pretty much the simplest complete WebGL program possible: </p>
+    <p>+ a shader program (with vertex and fragment shaders) </p>
+    <p>+ a WebGL context is obtained and attached to a canvas </p>
+    <p>+ the variable locations within the shader are acquired </p>
+    <p>+ the scene is drawn </p>
+    <p> No transformation matrix is used, so WebGL is acting as a two-dimensional renderer. </p>
+  </div></div>
+</body>
+</html>
