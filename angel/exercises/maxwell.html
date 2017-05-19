@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec2 vPosition;
+    attribute vec3 vColour;
+    varying vec4 vyColour;
+
+    void main() {
+      gl_Position = vec4(vPosition, 0.0, 1.0);
+      vyColour = vec4(vColour, 1.0 );
+      //vyColour.r = vColour.r * 0.299 + vColour.g * 0.587 + vColour.b * 0.114;
+      //vyColour.gb = vyColour.rr;
+      //vyColour = gl_Position;
+    }
+  </script>
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    varying vec4 vyColour;
+
+    void main() {
+      gl_FragColor = vyColour;
+      gl_FragColor.r = vyColour.r * 0.299 + vyColour.g * 0.587 + vyColour.b * 0.114;
+      gl_FragColor.gb = gl_FragColor.rr;
+      //gl_FragColor.r = gl_FragCoord.x / 512.0;
+      //gl_FragColor.g = gl_FragCoord.y / 512.0;
+      //gl_FragColor.b = 1.0 - (gl_FragColor.r + gl_FragColor.g);
+
+      /*if(gl_FragColor.r > gl_FragColor.g && gl_FragColor.r > gl_FragColor.b)
+        gl_FragColor.r = 1.0;
+      if(gl_FragColor.g > gl_FragColor.b && gl_FragColor.g > gl_FragColor.r)
+        gl_FragColor.g = 1.0;
+      if(gl_FragColor.b > gl_FragColor.r && gl_FragColor.b > gl_FragColor.g)
+        gl_FragColor.b = 1.0;*/
+    }
+  </script>
+  <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+  <script type="text/javascript" src="../Common/initShaders.js"></script>
+  <script type="text/javascript" src="../Common/flatten.js"></script>
+  <script type="text/javascript" src="maxwell.js"></script>
+</head>
+<body>
+  <canvas id="gl-canvas" width="512" height="512">
+    Oops ... your browser doesn't support the HTML5 canvas element
+  </canvas>
+</body>
+</html>

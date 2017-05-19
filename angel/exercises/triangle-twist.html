@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Exercise 1</title>
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec2 vPosition;
+    vec2 newPos;
+
+    void main() {
+      gl_Position = vec4(vPosition, 0.0, 1.0);
+    }
+  </script>
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+
+    void main() {
+      gl_FragColor = vec4( 1.0, 0.0, 0.0, 1.0 );
+    }
+  </script>
+  <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+  <script type="text/javascript" src="../Common/InitShaders.js"></script>
+  <script type="text/javascript" src="../Common/flatten.js"></script>
+  <script type="text/javascript" src="triangle-twist.js"></script>
+  <script type="text/javascript" src="../Common/MV.js"></script>
+</head>
+<body>
+<h2>Interactive Computer Graphics with WebGL</h2>
+<h3>Exercise 1</h3>
+  <div>
+    Recursive steps:  0 <input id="slider" type="range" min="0" max="10" step="1" value="0" /> <span id="RecursiveSteps">10</span>
+  </div>
+  <div>
+    Angle scale: -180 <input id="angle" type="range" min="-180" max="180" step="5" value="0" /> 180
+  </div>
+  <div>
+    Fractal <input id="fractal" type="checkbox" name="Fractal" value="true">
+  </div>
+    <div>
+      Shape:
+      <select id="shapes">
+        <option value="Triangle">Triangle</option>
+        <option value="Square">Square</option>
+        <option value="Pentagon">Pentagon</option>
+        <option value="Star">Star</option>
+        <option value="TrueSquare">True Square</option>
+      </select>
+    </div>
+
+  <canvas id="gl-canvas" width="512" height="512">
+    Oops ... your browser doesn't support the HTML5 canvas element
+  </canvas>
+</body>
+</html>

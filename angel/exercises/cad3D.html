@@ -1,0 +1,142 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Assignment 3: Geometric CAD</title>
+
+  <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+  <script type="text/javascript" src="../Common/InitShaders.js"></script>
+  <script type="text/javascript" src="../Common/flatten.js"></script>
+  <script type="text/javascript" src="../Common/MV.js"></script>
+  <script type="text/javascript" src="makeSphere.js"></script>
+  <script type="text/javascript" src="makeCylinder.js"></script>
+  <script type="text/javascript" src="makeCone.js"></script>
+  <script type="text/javascript" src="makeModel.js"></script>
+  <script type="text/javascript" src="cad3D.js"></script>
+
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    uniform mat4 matModelView;/* = mat4 ( 1.0, 0.0, 0.0, 0.0,
+    0.0, 1.0, 0.0, 0.0,
+    0.0, 0.0, 1.0, 0.0,
+    0.0, 0.0, -3.333, 1.0 );*/
+
+    mat4 matPojection = mat4 (  2.41421, 0.0, 0.0, 0.0,
+    0.0, 2.41421, 0.0, 0.0,
+    0.0, 0.0, -1.002002, -1.0,
+    0.0, 0.0, -0.2002002, 0.0 );
+
+    attribute vec3 vPosition;
+
+    void main() {
+      gl_Position = matPojection * matModelView * vec4(vPosition, 1.0);
+    }
+  </script>
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform vec4 vColour;
+
+    void main() {
+      gl_FragColor = vColour;
+    }
+  </script>
+
+  <style>
+    input[type=number]{width:70px;}
+    input[type=range]{width:210px;}
+    div.border {border:1px solid #0ff;border-radius: 10px; margin-bottom: 5px; padding: 5px; background-color: #cff}
+    td.controls {vertical-align:top;}
+    p.ln {line-height:25%; margin-bottom: 5px; }
+
+    div.couponcode:hover .coupontooltip { 
+        display: block;
+    }
+    span.coupontooltip {
+        display: none;  /* NEW */
+        background: #fffff0;
+        margin-left: 128px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1000;
+        width:220px;
+        height:50px;
+        white-space: nowrap;
+        /*opacity: 0.5;*/
+        background:rgba(255, 255, 240, 0.6);
+    }
+    /*div.couponcode {
+        margin:100px;
+    }*/
+  </style>
+</head>
+<body>
+  <div style="color:#008; float: right;display: inline;">
+    Tested on: <br />
+    Windows 7 -- FireFox, Chrome and IE<br />
+    Windows 8.1 -- Chrome and IE<br />
+    iPad Mini -- Safari<br />
+  </div>
+  <h2 style="display: inline;">
+    Interactive Computer Graphics with WebGL<br />
+    Assignment 3: Geometric CAD<br />
+    &nbsp;
+  </h2>
+  <table>
+    <tr>
+      <td>
+          <canvas id="gl-canvas" width="75%" height="75%" style="border:1px solid #000000;border-radius: 10px;">
+            Oops ... your browser doesn't support the HTML5 canvas element
+          </canvas>
+        </td>
+      <td class="controls">
+        <div class="border">
+          Current model: <select id="modelList" style="min-width:90px;"></select>
+          <button id="Delete">Delete</button>
+          <button id="ClearAll">Clear all</button><br />
+        </div>
+        <div class="border couponcode" id="ColourTipParent">
+          Colour: <input id="colour" type="color" value="#ffffff" />
+          <span class="coupontooltip" id="ColourTip"></span>
+          Show lines: <input id="showLines" type="checkbox" value="0" />
+        </div>
+          <div class="border">
+            Position:<br />
+            <input type="number" class="textfield" value="" id="posx" size="10">
+            <input type="number" class="textfield" value="" id="posy" size="10">
+            <input type="number" class="textfield" value="" id="posz" size="10"><br />
+          </div>
+          <div class="border">
+            <button style="float:right;" id="resetRot">Reset</button>
+            <p class="ln">Rotation:</p>
+            X: -180 <input id="rotx" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+            Y: -180 <input id="roty" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+            Z: -180 <input id="rotz" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+          </div>
+          <div class="border">
+            Scale:<br />
+            <input type="number" class="textfield" value="" id="scalex" size="5">
+            <input type="number" class="textfield" value="" id="scaley" size="5">
+            <input type="number" class="textfield" value="" id="scalez" size="5"><br />
+          </div>
+          <div class="border">
+            <button id="addSphere">Add sphere</button>
+            <button id="addCylinder">Add cylinder</button>
+            <button id="addCone">Add cone</button>
+          </div>
+          <div class="border">
+            <button style="float:right;" id="resetSceneRot">Reset</button>
+            <p class="ln">Scene Rotation:</p>
+            X: -180 <input id="srotx" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+            Y: -180 <input id="sroty" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+            Z: -180 <input id="srotz" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+          </div>
+          <div class="border couponcode" id="BackColourTipParent">
+            Background colour: <input id="backColour" type="color" value="#ffffff" />
+            <span class="coupontooltip" id="BackColourTip"></span>
+          </div>
+          <div class="border">
+            <button id="Refresh">Refresh</button>
+          </div>
+</td>
+    </tr>
+  </table>
+</body>
+</html>
