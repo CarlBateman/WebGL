@@ -1,0 +1,232 @@
+﻿<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <title>Assignment 5: Texture Mapping to a Sphere</title>
+
+  <script type="text/javascript" src="../Common/webgl-utils.js"></script>
+  <script type="text/javascript" src="../Common/InitShaders.js"></script>
+  <script type="text/javascript" src="../Common/flatten.js"></script>
+  <script type="text/javascript" src="../Common/MV.js"></script>
+  <script type="text/javascript" src="makeSphereLongLat.js"></script>
+  <script type="text/javascript" src="makeCylinder.js"></script>
+  <script type="text/javascript" src="makeCone.js"></script>
+  <script type="text/javascript" src="makeModel.js"></script>
+  <script type="text/javascript" src="makeLight.js"></script>
+  <script type="text/javascript" src="textureSphere.js"></script>
+
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    uniform mat4 matModelView;
+    uniform mat4 matNormal;
+
+    mat4 matPojection = mat4 (  2.41421, 0.0, 0.0, 0.0,
+                                0.0, 2.41421, 0.0, 0.0,
+                                0.0, 0.0, -1.002002, -1.0,
+                                0.0, 0.0, -0.2002002, 0.0 );
+
+    attribute vec3 vPosition;
+    varying vec3 vvPosition;
+    attribute vec3 vNormal;
+    varying vec3 vvNormal;
+    varying vec2 vTextureCoord;
+    attribute vec2 aTextureCoord;
+
+    void main() {
+      vTextureCoord = aTextureCoord;
+      vvNormal = (matNormal * vec4(vNormal, 1.0)).xyz;
+      vvPosition = (matModelView * vec4(vPosition, 1.0)).xyz;
+      gl_Position = matPojection * matModelView * vec4(vPosition, 1.0);
+    }
+  </script>
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision mediump float;
+    uniform vec4 vColour;
+
+    uniform vec4 ambientProduct[2], diffuseProduct[2], specularProduct[2];
+    uniform vec4 lightPosition[2];
+    uniform float shininess;
+    uniform vec3 eyePosition;
+    
+    varying vec3 vvNormal;
+    varying vec3 vvPosition;
+    uniform sampler2D uSampler;
+    varying vec2 vTextureCoord;
+    
+    uniform bool useLight, useTexture;
+    uniform mat4 matSceneView;
+    uniform float a,b,c;
+
+    void main() {
+      if(useLight){
+        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        vec4 textureColor = texture2D(uSampler, vec2(vTextureCoord.s, vTextureCoord.t));
+  
+        for(int i = 0; i < 2; i++) {
+          float d = length(lightPosition[i].xyz - vvPosition);// distance(lightPosition[i].xyz , vvPosition);
+          float att = (1.0 + a + b * d + c * d * d);
+
+          vec4 lightPos = matSceneView * lightPosition[i];
+          vec3 L;
+          if(lightPosition[i].w == 0.0)
+            L = normalize( lightPos.xyz);
+          else
+            L = normalize( (lightPos.xyz - vvPosition) .xyz);
+
+          vec3 E = normalize( eyePosition);
+          vec3 H = normalize( L + E );
+
+          // Transform vertex normal into eye coordinates
+          vec3 N = normalize(vvNormal.xyz);
+
+          // Compute terms in the illumination equation
+          vec4 ambient = ambientProduct[i];
+
+          float Kd = max( dot(L, N), 0.0 );
+          vec4  diffuse = Kd*diffuseProduct[i];
+
+          float Ks = pow( max(dot(N, H), 0.0), shininess );
+          vec4 specular = Ks * specularProduct[i];
+
+          if( dot(L, N) < 0.0 ) {
+            specular = vec4(0.0, 0.0, 0.0, 1.0);
+          }
+
+          gl_FragColor += ambient + (diffuse + specular) / att;
+          if(useTexture)
+            gl_FragColor *= textureColor;
+        }
+        gl_FragColor.a = 1.0;
+      } else {
+        gl_FragColor = vColour;
+      }
+    }
+  </script>
+
+  <style>
+    input[type=number]{width:70px;}
+    input[type=range]{width:210px;}
+    div.border0 {border:1px solid #0cc;border-radius: 10px; margin-bottom: 5px; padding: 5px; padding-bottom:0px; background-color: #cff}
+    div.border {border:1px solid #0cc;border-radius: 10px; margin-bottom: 5px; padding: 5px; background-color: #cff}
+    td {vertical-align:top;}
+    .ln {line-height:100%; margin-bottom: 5px; }
+
+    div.tooltipTarget:hover .tooltip { 
+        display: block;
+    }
+    span.tooltip {
+        display: none;  /* NEW */
+        background: #fffff0;
+        margin-left: 128px;
+        padding: 10px;
+        position: absolute;
+        z-index: 1000;
+        width:220px;
+        height:50px;
+        white-space: nowrap;
+        /*opacity: 0.5;*/
+        background:rgba(255, 255, 240, 0.6);
+    }
+    /*div.tooltipTarget {
+        margin:100px;
+    }*/
+  </style>
+</head>
+<body>
+  <div style="color:#008; float: right;display: inline;">
+    Tested on: <br />
+    Windows 8.1 -- Chrome, Firefox and IE<br />
+  </div>
+  <h2 style="display: inline;">
+    Interactive Computer Graphics with WebGL<br />
+    Assignment 5: Texture Mapping to a Sphere
+  </h2>
+  <table>
+    <tr>
+      <td id="h2">
+          <canvas id="gl-canvas" width="50%" height="50%" style="border:1px solid #000000;border-radius: 10px;">
+            Oops ... your browser doesn't support the HTML5 canvas element
+          </canvas>
+        </td>
+      <td>
+        <div class="border0">
+          <div class="border">
+            Current light: <select id="lightList" style="min-width:90px;">
+              <option value="Light1">Light (1)</option>
+              <option value="Light2">Light (2)</option>
+            </select>
+          </div>
+          <div class="border tooltipTarget" id="LightColourTipParent">
+            Light colour
+            <div style="float:right">
+              Animate: <input id="animate" type="checkbox" value="0" checked />
+              Active: <input id="active" type="checkbox" value="1" checked />
+            </div><br />
+            Diffuse:  <input id="lightColour" type="color" value="#ffffff" /><br />
+            Ambient:  <input id="lightAmbient" type="color" value="#ffffff" /><br />
+            Specular: <input id="lightSpecular" type="color" value="#ffffff" />
+            <span class="tooltip" id="LightColourTip"></span>
+            <div class="border">
+              Attenuation:<br />
+              <input style="width:50px" type="number" class="textfield" value="0" id="a">a &nbsp; &nbsp;
+              <input style="width:50px" type="number" class="textfield" value="0" id="b">b * d &nbsp;
+              <input style="width:50px" type="number" class="textfield" value="0" id="c">c * d * d
+            </div>
+          </div>
+        </div>
+        <div class="border0">
+          <div class="border tooltipTarget" id="ColourTipParent">
+            Model colour (material)
+            <div style="float:right">Show lines: <input id="showLines" type="checkbox" value="0" /></div> <br />
+            Texture: <select id="Texture" style="min-width:90px;">
+              <option value="None">None</option>
+              <option value="Check" selected>Check</option>
+              <option value="Mars">Earth</option>
+            </select><br />
+            Mapping: <select id="Mapping" style="min-width:90px;">
+              <option value="Spherical">Spherical</option>
+              <option value="Planar">Planar</option>
+              <option value="Cylindrical">Cylindrical</option>
+            </select><br />
+            Diffuse: <input id="colour" type="color" value="#ffffff" /><br />
+            Ambient: <input id="ambient" type="color" value="#ffffff" /><br />
+            Specular: <input id="specular" type="color" value="#ffffff" />
+            <span class="tooltip" id="ColourTip"></span>
+          </div>
+          <div class="border">
+            Position:
+            <input type="number" class="textfield" value="" id="posx" size="10">
+            <input type="number" class="textfield" value="" id="posy" size="10">
+            <input type="number" class="textfield" value="" id="posz" size="10"><br />
+          </div>
+          <div class="border">
+            <div class="ln">
+              Rotation:<button style="float:right;" id="resetRot">Reset</button>
+            </div>
+            X: -180 <input id="rotx" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+            Y: -180 <input id="roty" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+            Z: -180 <input id="rotz" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+          </div>
+          <div class="border">
+            Scale:
+            <input type="number" class="textfield" value="" id="scalex" size="5">
+            <input type="number" class="textfield" value="" id="scaley" size="5">
+            <input type="number" class="textfield" value="" id="scalez" size="5"><br />
+          </div>
+        </div>
+        <div class="border">
+          <div class="ln">Scene Rotation:<button style="float:right;" id="resetSceneRot">Reset</button></div>
+          X: -180 <input id="srotx" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+          Y: -180 <input id="sroty" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+          Z: -180 <input id="srotz" type="range" min="-180" max="180" step="5" value="0" /> 180<br />
+        </div>
+        <div class="border tooltipTarget" id="BackColourTipParent">
+          Background colour: <input id="backColour" type="color" value="#e5e5e5" />
+          <span class="tooltip" id="BackColourTip"></span>
+        </div>
+        <!--<div class="border">
+          <button id="Refresh">Refresh</button>
+        </div>-->
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
